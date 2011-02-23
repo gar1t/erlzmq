@@ -15,6 +15,7 @@
 #include <zmq.h>
 #include <ctype.h>
 #include <sstream>
+#include <vector>
 #include <assert.h>
 #include "zmq_drv.h"
 
@@ -277,6 +278,17 @@ zmqdrv_ok_bool(zmq_drv_t *drv, ErlDrvTermData pid, bool val)
 }
 
 static void
+zmqdrv_ok_atom(zmq_drv_t *drv, ErlDrvTermData pid, ErlDrvTermData val)
+{
+    ErlDrvTermData spec[] = {
+        ERL_DRV_ATOM,  am_zok,
+        ERL_DRV_ATOM, val,
+        ERL_DRV_TUPLE, 2
+    };
+    driver_send_term(drv->port, pid, spec, sizeof(spec)/sizeof(spec[0]));
+}
+
+static void
 zmqdrv_ok_int64(zmq_drv_t *drv, ErlDrvTermData pid, int64_t val)
 {
     ErlDrvTermData spec[] = {
@@ -312,6 +324,7 @@ int zmqdrv_driver_init(void)
     INIT_ATOM(msg);
     INIT_ATOM(true);
     INIT_ATOM(false);
+    INIT_ATOM(parts);
     return 0;
 }
 
@@ -380,7 +393,8 @@ zmqdrv_ready_input(ErlDrvData handle, ErlDrvEvent event)
                 break;
             }
 
-            if ((*si)->active_mode) {
+            if ((*si)->active_mode == 1) {
+
                 // Send message {zmq, Socket, binary()} to the owner pid
                 ErlDrvTermData spec[] =
                     {ERL_DRV_ATOM,  am_zmq,
@@ -388,6 +402,43 @@ zmqdrv_ready_input(ErlDrvData handle, ErlDrvEvent event)
                      ERL_DRV_BUF2BINARY, (ErlDrvTermData)zmq_msg_data(&msg), zmq_msg_size(&msg),
                      ERL_DRV_TUPLE, 3};
                 driver_send_term(drv->port, owner, spec, sizeof(spec)/sizeof(spec[0]));
+
+            } else if ((*si)->active_mode == 2) {
+
+                // Send message {zmq, Socket, [binary()]} to the owner pid
+                // where binary() is each message part
+                std::vector<ErlDrvTermData> specv;
+                specv.reserve(100);
+                specv.push_back(ERL_DRV_ATOM);
+                specv.push_back(am_zmq);
+                specv.push_back(ERL_DRV_UINT);
+                specv.push_back(idx);
+                specv.push_back(ERL_DRV_BUF2BINARY);
+                specv.push_back((ErlDrvTermData)zmq_msg_data(&msg));
+                specv.push_back(zmq_msg_size(&msg));
+                int64_t more;
+                size_t more_size = sizeof(more);
+                int next_count = 0;
+                while (true) {
+                    zmq_getsockopt(s, ZMQ_RCVMORE, &more, &more_size);
+                    if (!more)
+                        break;
+                    next_count += 1;
+                    msg_t next_part;
+                    rc = zmq_recv(s, &next_part, ZMQ_NOBLOCK);
+                    assert (!rc); // FIXME
+                    specv.push_back(ERL_DRV_BUF2BINARY);
+                    specv.push_back((ErlDrvTermData)zmq_msg_data(&next_part));
+                    specv.push_back(zmq_msg_size(&next_part));
+                }
+                specv.push_back(ERL_DRV_NIL);
+                specv.push_back(ERL_DRV_LIST);
+                specv.push_back(next_count + 2);
+                specv.push_back(ERL_DRV_TUPLE);
+                specv.push_back(3);
+                ErlDrvTermData *spec = specv.data();
+                driver_send_term(drv->port, owner, spec, specv.size());
+
             } else {
                 // Return result {ok, binary()} to the waiting caller's pid
                 ErlDrvTermData spec[] = 
@@ -810,7 +861,10 @@ zmqdrv_getsockopt(zmq_drv_t *drv, ErlIOVec *ev)
             zmqdrv_ok_int64(drv, driver_caller(drv->port), val.i);
             break;
         case ZMQ_ACTIVE:
-            zmqdrv_ok_bool(drv, driver_caller(drv->port), si->active_mode);
+            zmqdrv_ok_atom(drv, driver_caller(drv->port),
+                           (si->active_mode == 1 ? am_true :
+                            (si->active_mode == 2 ? am_parts :
+                             am_false)));
             break;
         default:
             zmqdrv_error(drv, "Option not implemented!");

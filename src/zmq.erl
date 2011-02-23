@@ -26,12 +26,14 @@
 %%%                     | {reconnect_ivl, integer()}
 %%%                     | {backlog, integer()}
 %%%                     | {recovery_ivl_msec, integer()}
-%%%                     | {active, boolean()}.     
+%%%                     | {active, true | false | parts}.     
 %%%           0MQ socket options. See 0MQ man pages for details.
 %%%           One additional options `active' indicates to the driver
 %%%           that incoming messages must be automatically delivered 
 %%%           to the process owner's mailbox instead of explicitely
-%%%           requiring recv/1 call.
+%%%           requiring recv/1 call. If `active' is `parts', messages
+%%%           are delivered as a list of binary parts, one for each
+%%%           part sent.
 %%% @end
 %%% @type zmq_sendopt() = sndmore.
 %%%           Send options. See 0MQ man pages for details.
@@ -108,7 +110,7 @@ socket(Type) when is_atom(Type) ->
 %%          Type = pair | pub | sub | req | rep | 
 %%                 xreq | xrep | upstream | downstream
 %%          Options = [Option]
-%%          Option  = {active, boolean()}
+%%          Option  = {active, true | false | parts}
 %%                  | {zmq_sockopt(), Value}
 %% @end
 %%--------------------------------------------------------------------
@@ -495,11 +497,15 @@ encode_setsockopt({reconnect_ivl, V}) when is_integer(V) ->
 encode_setsockopt({backlog, V}) when is_integer(V) ->
     <<?ZMQ_BACKLOG, 4, V:32/native>>;
 % Driver's internal socket options
-encode_setsockopt({active, V}) when is_boolean(V) ->
-    <<?ZMQ_ACTIVE, 1, (bool_to_int(V))>>.
+encode_setsockopt({active, V}) ->
+    <<?ZMQ_ACTIVE, 1, (active_to_int(V))>>.
 
 bool_to_int(true)  -> 1;
 bool_to_int(false) -> 0.
+
+active_to_int(true) -> 1;
+active_to_int(false) -> 0; 
+active_to_int(parts) -> 2. 
 
 sockopt_to_int(hwm)                 -> ?ZMQ_HWM;
 sockopt_to_int(swap)                -> ?ZMQ_SWAP;

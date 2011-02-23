@@ -59,14 +59,15 @@ struct zmq_sock_info {
     int            out_flags;   // Send flags for the pending message
     ErlDrvTermData out_caller;  // Caller's pid of the last send() command
                                 // if it resulted in EAGAIN error.
-    bool           active_mode; // true  - messages are delivered to owner
-                                // false - owner must explicitely call recv()
+    int            active_mode; // 0  - owner must explicitely call recv()
+                                // 1  - messages are delivered to owner 
+                                // 2  - messages are delivered to owner as a list of binary parts
     zmq_sock_info* prev;        // Pointer to prev socket info structure
     zmq_sock_info* next;        // Pointer to next socket info structure
 
     zmq_sock_info(zmq_socket_t _s, uint32_t _idx, ErlDrvTermData _owner, int _sig_fd)
         : socket(_s), idx(_idx), owner(_owner), fd(_sig_fd), in_caller(0)
-        , out_flags(0), out_caller(0), active_mode(true), prev(NULL), next(NULL)
+        , out_flags(0), out_caller(0), active_mode(1), prev(NULL), next(NULL)
     {
         zmq_msg_init(&out_msg);
     }
@@ -169,4 +170,4 @@ static ErlDrvTermData am_zmq;
 static ErlDrvTermData am_msg;
 static ErlDrvTermData am_true;
 static ErlDrvTermData am_false;
-
+static ErlDrvTermData am_parts;
