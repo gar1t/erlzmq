@@ -225,11 +225,13 @@ zmqdrv_socket_error(zmq_drv_t *drv, ErlDrvTermData pid, uint32_t idx, int err) {
     // Return {zmq, Socket::integer(), {error, Reason::atom()}}
     ErlDrvTermData spec[] =
         {ERL_DRV_ATOM,  am_zmq,
-            ERL_DRV_UINT,  idx,
-            ERL_DRV_ATOM,  am_error,
-            ERL_DRV_ATOM,  error_atom(err),
-            ERL_DRV_TUPLE, 2,
-            ERL_DRV_TUPLE, 3};
+         ERL_DRV_PORT, driver_mk_port(drv->port), 
+         ERL_DRV_UINT,  idx,
+         ERL_DRV_TUPLE, 2,
+         ERL_DRV_ATOM,  am_error,
+         ERL_DRV_ATOM,  error_atom(err),
+         ERL_DRV_TUPLE, 2,
+         ERL_DRV_TUPLE, 3};
     driver_send_term(drv->port, pid, spec, sizeof(spec)/sizeof(spec[0]));
 }
 
@@ -382,7 +384,9 @@ zmqdrv_ready_input(ErlDrvData handle, ErlDrvEvent event)
                 if (zmq_errno() != EAGAIN) {
                     ErlDrvTermData spec[] =
                         {ERL_DRV_ATOM,  am_zmq,
+                         ERL_DRV_PORT,  driver_mk_port(drv->port),
                          ERL_DRV_UINT,  idx,
+                         ERL_DRV_TUPLE, 2,
                          ERL_DRV_ATOM,  am_error,
                          ERL_DRV_ATOM,  error_atom(zmq_errno()),
                          ERL_DRV_TUPLE, 2,
@@ -398,7 +402,9 @@ zmqdrv_ready_input(ErlDrvData handle, ErlDrvEvent event)
                 // Send message {zmq, Socket, binary()} to the owner pid
                 ErlDrvTermData spec[] =
                     {ERL_DRV_ATOM,  am_zmq,
+                     ERL_DRV_PORT,  driver_mk_port(drv->port),
                      ERL_DRV_UINT,  idx,
+                     ERL_DRV_TUPLE, 2,
                      ERL_DRV_BUF2BINARY, (ErlDrvTermData)zmq_msg_data(&msg), zmq_msg_size(&msg),
                      ERL_DRV_TUPLE, 3};
                 driver_send_term(drv->port, owner, spec, sizeof(spec)/sizeof(spec[0]));
@@ -411,8 +417,12 @@ zmqdrv_ready_input(ErlDrvData handle, ErlDrvEvent event)
                 specv.reserve(100);
                 specv.push_back(ERL_DRV_ATOM);
                 specv.push_back(am_zmq);
+                specv.push_back(ERL_DRV_PORT);
+                specv.push_back(driver_mk_port(drv->port));
                 specv.push_back(ERL_DRV_UINT);
                 specv.push_back(idx);
+                specv.push_back(ERL_DRV_TUPLE);
+                specv.push_back(2);
                 specv.push_back(ERL_DRV_BUF2BINARY);
                 specv.push_back((ErlDrvTermData)zmq_msg_data(&msg));
                 specv.push_back(zmq_msg_size(&msg));
@@ -436,8 +446,7 @@ zmqdrv_ready_input(ErlDrvData handle, ErlDrvEvent event)
                 specv.push_back(next_count + 2);
                 specv.push_back(ERL_DRV_TUPLE);
                 specv.push_back(3);
-                ErlDrvTermData *spec = specv.data();
-                driver_send_term(drv->port, owner, spec, specv.size());
+                driver_send_term(drv->port, owner, specv.data(), specv.size());
 
             } else {
                 // Return result {ok, binary()} to the waiting caller's pid

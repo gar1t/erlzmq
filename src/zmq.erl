@@ -30,10 +30,10 @@
 %%%           0MQ socket options. See 0MQ man pages for details.
 %%%           One additional options `active' indicates to the driver
 %%%           that incoming messages must be automatically delivered 
-%%%           to the process owner's mailbox instead of explicitely
-%%%           requiring recv/1 call. If `active' is `parts', messages
-%%%           are delivered as a list of binary parts, one for each
-%%%           part sent.
+%%%           to the process owner's mailbox as {zmq, Socket, Msg} 
+%%%           instead of explicitely requiring recv/1 call. If `active'
+%%%           is `parts', messages are delivered as a list of binary
+%%%           parts, one for each part received.
 %%% @end
 %%% @type zmq_sendopt() = sndmore.
 %%%           Send options. See 0MQ man pages for details.
