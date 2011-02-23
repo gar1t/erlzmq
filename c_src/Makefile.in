@@ -28,6 +28,6 @@ distclean: clean
 	rm Makefile
 
 install:
-	$(MKDIR_P) $(DIST_DIR) $(dir $(DIST_DIR))c_src
-	$(INSTALL) zmq_drv.{h,cpp} $(dir $(DIST_DIR))c_src/
-	$(INSTALL) $(LIBZMQ_SO) $(DIST_DIR)/
+	$(MKDIR_P) $(DESTDIR)$(DIST_DIR) $(dir $(DESTDIR)$(DIST_DIR))c_src
+	$(INSTALL) zmq_drv.{h,cpp} $(dir $(DESTDIR)$(DIST_DIR))c_src/
+	$(INSTALL) $(LIBZMQ_SO) $(DESTDIR)$(DIST_DIR)/

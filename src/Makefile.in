@@ -34,8 +34,8 @@ $(DOC_DIR)/zmq.html: zmq.erl overview.edoc
 
 install:
 	@[ -d $(DOC_DIR) ] || (echo "Error: run 'make docs' first!" && exit 1)
-	$(MKDIR_P) $(DIST_DIR)/src $(DIST_DIR)/ebin $(DIST_DIR)/doc
-	$(INSTALL) ../src/*.erl $(DIST_DIR)/src/
-	$(INSTALL) ../ebin/*.{beam,app} $(DIST_DIR)/ebin/
-	$(INSTALL) ../doc/*.{css,html,png} $(DIST_DIR)/doc
-	$(INSTALL) ../{README,LICENSE} $(DIST_DIR)
+	$(MKDIR_P) $(DESTDIR)$(DIST_DIR)/{src,ebin,doc}
+	$(INSTALL) ../src/*.erl $(DESTDIR)$(DIST_DIR)/src/
+	$(INSTALL) ../ebin/*.{beam,app} $(DESTDIR)$(DIST_DIR)/ebin/
+	$(INSTALL) ../doc/*.{css,html,png} $(DESTDIR)$(DIST_DIR)/doc
+	$(INSTALL) ../{README,LICENSE} $(DESTDIR)$(DIST_DIR)
