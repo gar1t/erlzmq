@@ -128,9 +128,9 @@ being stripped.
 
 A new socket option is added called `active'.  The option accepts
 a boolean argument and has the following meaning.  If the option 
-is `true', all incoming messages are automatically delivered by
-the driver to the owner's mailbox without explicit need to 
-call zmq:recv/1.
+is `true' (the default), all incoming messages are automatically
+delivered by the driver to the owner's mailbox without explicit need
+to call zmq:recv/1.
 
 If the option is `false' the owner must explicitely call zmq:recv/1
 to receive a message from a ZeroMQ socket.  Use `{active, true}' 
