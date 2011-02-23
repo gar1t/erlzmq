@@ -6,6 +6,7 @@
   {modules, [zmq]},
   {registered,[]},
   {applications, [kernel,stdlib]},
+  {mod, {zmq_app, []}},
   {env, []}
  ]
 }.
