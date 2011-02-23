@@ -370,6 +370,7 @@ zmqdrv_ready_input(ErlDrvData handle, ErlDrvEvent event)
                     ErlDrvTermData spec[] =
                         {ERL_DRV_ATOM,  am_zmq,
                          ERL_DRV_UINT,  idx,
+                         ERL_DRV_ATOM,  am_error,
                          ERL_DRV_ATOM,  error_atom(zmq_errno()),
                          ERL_DRV_TUPLE, 2,
                          ERL_DRV_TUPLE, 3};
