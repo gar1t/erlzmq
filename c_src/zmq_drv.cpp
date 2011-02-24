@@ -415,6 +415,7 @@ zmqdrv_ready_input(ErlDrvData handle, ErlDrvEvent event)
                 // where binary() is each message part
                 std::vector<ErlDrvTermData> specv;
                 specv.reserve(100);
+                std::vector<msg_t*> parts;
                 specv.push_back(ERL_DRV_ATOM);
                 specv.push_back(am_zmq);
                 specv.push_back(ERL_DRV_PORT);
@@ -434,12 +435,13 @@ zmqdrv_ready_input(ErlDrvData handle, ErlDrvEvent event)
                     if (!more)
                         break;
                     next_count += 1;
-                    msg_t next_part;
-                    rc = zmq_recv(s, &next_part, ZMQ_NOBLOCK);
+                    msg_t *next_part = new msg_t;
+                    parts.push_back(next_part);
+                    rc = zmq_recv(s, next_part, ZMQ_NOBLOCK);
                     assert (!rc); // FIXME
                     specv.push_back(ERL_DRV_BUF2BINARY);
-                    specv.push_back((ErlDrvTermData)zmq_msg_data(&next_part));
-                    specv.push_back(zmq_msg_size(&next_part));
+                    specv.push_back((ErlDrvTermData)zmq_msg_data(next_part));
+                    specv.push_back(zmq_msg_size(next_part));
                 }
                 specv.push_back(ERL_DRV_NIL);
                 specv.push_back(ERL_DRV_LIST);
@@ -447,6 +449,9 @@ zmqdrv_ready_input(ErlDrvData handle, ErlDrvEvent event)
                 specv.push_back(ERL_DRV_TUPLE);
                 specv.push_back(3);
                 driver_send_term(drv->port, owner, specv.data(), specv.size());
+                for (uint i = 0; i < parts.size(); i++) {
+                    delete parts[i];
+                }
 
             } else {
                 // Return result {ok, binary()} to the waiting caller's pid
